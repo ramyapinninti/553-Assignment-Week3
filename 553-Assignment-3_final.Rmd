@@ -1,0 +1,1072 @@
+---
+title: "2024 Movie Revenue and Blockbuster Analysis: An Overview of US Domestic Box Office Trends"
+author: "Ramya Pinninti"
+date: "`r Sys.Date()`"
+output:
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: yes
+    toc_collapsed: yes
+    code_folding: hide
+    code_download: yes
+    smooth_scroll: yes
+    theme: lumen
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    number_sections: yes
+    fig_width: 3
+    fig_height: 3
+  word_document: 
+    toc: yes
+    toc_depth: 4
+    fig_caption: yes
+    keep_md: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{css, echo = FALSE}
+#TOC::before {
+  content: "Table of Contents";
+  font-weight: bold;
+  font-size: 1.2em;
+  display: block;
+  color: navy;
+  margin-bottom: 10px;
+}
+
+
+div#TOC li {     /* table of content  */
+    list-style:upper-roman;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+}
+
+h1.title {    /* level 1 header of title  */
+  font-size: 22px;
+  font-weight: bold;
+  color: DarkRed;
+  text-align: center;
+  font-family: "Gill Sans", sans-serif;
+}
+
+h4.author { /* Header 4 - and the author and data headers use this too  */
+  font-size: 15px;
+  font-weight: bold;
+  font-family: system-ui;
+  color: navy;
+  text-align: center;
+}
+
+h4.date { /* Header 4 - and the author and data headers use this too  */
+  font-size: 18px;
+  font-weight: bold;
+  font-family: "Gill Sans", sans-serif;
+  color: DarkBlue;
+  text-align: center;
+}
+
+h1 { /* Header 1 - and the author and data headers use this too  */
+    font-size: 20px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: center;
+}
+
+h2 { /* Header 2 - and the author and data headers use this too  */
+    font-size: 18px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h3 { /* Header 3 - and the author and data headers use this too  */
+    font-size: 16px;
+    font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: navy;
+    text-align: left;
+}
+
+h4 { /* Header 4 - and the author and data headers use this too  */
+    font-size: 14px;
+  font-weight: bold;
+    font-family: "Times New Roman", Times, serif;
+    color: darkred;
+    text-align: left;
+}
+
+/* Add dots after numbered headers */
+.header-section-number::after {
+  content: ".";
+}
+body { background-color:white; }
+
+.highlightme { background-color:yellow; }
+
+p { background-color:white; }
+
+```
+
+
+
+```{r setup, include=FALSE}
+# Global chunk options
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  comment = "",
+  fig.width = 10,
+  fig.height = 6,
+  fig.align = "center"
+)
+
+# all used
+packages <- c(
+  "fastDummies",
+  "tibble",
+  "lubridate",
+  "forcats",
+  "dplyr",
+  "tidyverse",
+  "tidygeocoder",
+  "logistf",
+  "ggplot2",
+  "naniar",
+  "skimr",
+  "GGally",
+  "plotly",
+  "DT",
+  "scales",
+  "stringr",
+  "patchwork",
+  "kableExtra",
+  "car",
+  "broom",
+  "treemapify",
+  "leaflet"
+)
+
+# Install missing packages, then load 
+for (pkg in packages) {
+  if (!require(pkg, character.only = TRUE)) {
+    install.packages(pkg, dependencies = TRUE)
+    library(pkg, character.only = TRUE)
+  }
+}
+
+
+library(fastDummies)
+library(tibble)
+library(lubridate)
+library(forcats)
+library(dplyr)
+library(tidyverse)
+library(tidygeocoder)    
+library(logistf)
+library(ggplot2)      # For advanced plotting
+library(naniar)       # For missing data visualization
+library(skimr)        # For compact data summaries
+library(GGally)       # For parallel coordinate plots
+library(plotly)       # For interactive visualizations
+library(DT)           # For interactive tables
+library(scales)       # For formatting numbers
+library(stringr)      # For string operations
+library(patchwork)    # For layout stitching
+library(kableExtra)   # For premium table layouts
+library(car)          # For interactive tables
+library(broom)
+library(treemapify)
+library(leaflet)
+
+# Custom theme for consistent visual design
+theme_storytelling <- theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", margin = margin(b = 10)),
+    plot.subtitle = element_text(size = 12, color = "grey40"),
+    axis.title = element_text(size = 11),
+    axis.text = element_text(size = 10),
+    legend.position = "bottom",
+    panel.grid.major = element_line(color = "grey90"),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+```
+
+
+
+# Introduction and Motivation 
+
+Hollywood films involve a labor-intensive production-to-release life cycle. The planning, budgeting, production and marketing of films can vary significantly by genre and scale, and significant resources are invested into high-budget films in the hopes of producing a commercial success. On average, it takes 2.5 years to make a film, but animated films can take up to seven years, with audiences often waiting years for the sequels of major franchises such as 'Toy Story' and 'Zootopia.' 
+
+However, despite audience loyalty to certain franchises, robust analytics and prediction algorithms are crucial to maintaining a production edge.  Recent events such as the COVID-19 pandemic and rise of streaming platforms have impacted how audiences interact with movies and their sentiments towards movie-going. 
+
+In particular, Tubi and the rise of streaming has made traditional long-form media more accessible. While platforms such as Netflix and Tubi have original content, they also promote and reinforce the popularity of classic Hollywood movies and franchises. The overarching trend is moving towards personalization--providing the media that audiences already know and love, while giving visibility to up and coming filmmakers and trends that appeal to younger audiences. As entertainment companies listen to their audiences, they move towards a media style that is increasingly recommendation-driven and curated for their demographics.
+
+The analysis in this report focuses on domestic box office data for the top 200 movies of 2024, looking at factors that contribute to their rankings in total domestic gross revenue. Using the previous 'Premiere Movie Analytics' report as supplemental data, it analyzes trends in the entertainment industry to model the relationship between a movie's commercial success and factors such as its genre, MPAA rating, runtime, and Distributor. 
+
+# Background Story and Data Generation Process
+
+How the data was collected:
+
+Entertainment-industry information can be hard to obtain, due to its proprietary nature. The data in this data set was scraped from Box Office Mojo, using their publicly available box office revenue data. The year 2024 is the focus of this data set, which consists of 180 observations of films released in this year.
+
+
+**Data Dictionary**
+
+
+```{r}
+# Create an interactive data dictionary
+library(tibble)
+
+data_dictionary <- tribble(
+  ~Variable_Name,     ~Description,                                          ~Variable_Type,
+  "Is_Success",       "Binary indicator: 1 if Gross revenue is >= $150M, 0 otherwise", "Categorical",
+  "Runtime",          "Duration of the film in minutes",                     "Numeric",
+  "Distributor_Type", "Classification of the film's distributor (e.g., Major vs Independent)", "Categorical",
+  "Primary_Genre",    "The main genre category of the film",                 "Categorical",
+  "Release_Season",   "The season during which the film was released",       "Categorical",
+  "Gross",            "Total domestic gross revenue of the film",            "Numeric",
+  "Log_Gross",        "Log-transformed domestic gross revenue",              "Numeric",
+  "Studio",           "The name of the production studio",                   "Categorical",
+  "Headquarters",     "The location of the studio's primary office",         "Categorical",
+  "latitude",         "Geographic latitude of the studio headquarters",      "Numeric",
+  "longitude",        "Geographic longitude of the studio headquarters",     "Numeric"
+)
+
+datatable(
+  data_dictionary,
+  caption = "Table 1: Variable definitions and types for the analysis dataset",
+  rownames = FALSE,
+  options = list(pageLength = 10, dom = 'tip')
+)
+```
+
+
+
+## Business Questions and Hypotheses
+
+The purpose of collecting this dataset was to answer the following practical business questions:
+
+**Business Question 1**: How important is a film's distributor when it comes to determining whether the film is a success, compared to other factors? 
+
+**Business Question 2**: Does the run time of a film play a role in its commercial success? 
+
+
+Hypotheses derived from domain knowledge:
+
+**H1**: Major distributors such as Warner Bros, Walt Disney, and Paramount produce higher earning movies than smalller distributors. 
+
+**H2**: Family movies appeal to larger audiences, as they attract younger and older age groups. The PG and PG-13 MPAA ratings will produce the highest earning films.
+
+**H3**: Smaller distributors are likely to produce high-earning films that appeal to mature audiences who seek novelty in cinema. The high-earning films that are produced by smaller distributors are likely to have a higher maturity rating, as distributors such as Disney dominate the family entertainment genre. 
+
+These hypotheses will guide our exploratory visual analysis and help us focus the narrative.
+
+# Visual Exploratory Analytic Plan (What to Visualize)
+
+**Narrative of the plan**: Before building any predictive models or dashboards, we must thoroughly understand the structure, quality, and underlying patterns in the data. 
+
+The following visual exploratory data analysis (V-EDA) plan is designed to systematically examine each variable, uncover hidden relationships, and validate — or challenge — our initial assumptions. 
+The plan is organized into three logical phases: (1) a high-level inspection for data integrity and missingness, (2) univariate profiling of individual variables to understand their distributions, and (3) bivariate and multivariate analyses to explore relationships central to our business questions.
+
+## Overall Data Inspection — Missing Values and Data Quality
+
+
+
+**Goal**: 
+
+* Assess the completeness and overall health of the dataset before diving into analysis.
+
+* Visualize the missing data pattern using an aggregated heatmap or upset plot.
+
+* Examine the proportion of missing values per variable and identify any systematic missingness patterns.
+
+* Check for potential data entry errors (e.g., implausible age values, negative amounts).
+
+
+## Variable Inspections — Distribution Analysis
+
+**Goal**: Understand the central tendency, spread, and shape of each variable individually.
+
+* **Numeric variables**: Histograms with overlaid density curves, supplemented by boxplots to detect outliers.
+
+* **Categorical variables**: Bar charts ordered by frequency, supplemented by proportional displays (waffle or treemap alternatives if needed).
+
+* **Date/time variables**: Time series trend plots to understand temporal patterns (if applicable).
+
+
+## Relationships Between Variables
+
+**Goal**: Investigate the associations and interactions that underpin our business questions.
+
+* **Numerical vs. Numerical**: Scatterplots with local regression (LOESS) smoothers to detect linear/non-linear trends. Correlation matrices with hierarchical clustering.
+
+* **Categorical vs. Categorical**: Grouped and stacked bar charts to compare proportions. Mosaic plots for complex contingency tables.
+
+* **Numerical vs. Categorical**: Side-by-side boxplots, violin plots, and ridge density plots to compare distributions across categories.
+
+
+# Effective Visual Design 
+
+
+## Data Quality and Missing Value Assessment
+
+### Missing Data Pattern
+
+Before interpreting any patterns in the data, we must first address the question of missingness. Gaps in the data can introduce bias and undermine the validity of our conclusions if not properly understood. The data set was inspected for missing values and none were found. However, the data set was cleaned significantly as outlined below. 
+
+### Data Inspection and Cleaning: 
+
+
+The top two hundred films of 2024 were scraped directly from Box Office Mojo, and the resulting data was inspected for missing or incomplete values. Missing values appeared in the ‘Budget,’ ,’Genre,’ ‘Distributor,’ ‘MPAA,’ and ‘Runtime’ variables. 
+
+The ‘MPAA’ variable had ‘NA’ values that followed a certain pattern.The ‘NA’ values were observed in films that were not given an official MPAA rating, typical of international films that released in the US and genres such as documentary or horror. ‘NA’ was substituted with ‘NR’ for these values, and the significance of the rating will be discussed in a later section. The missing values in the ‘Runtime,’ ‘Genre,’ and ‘Distributor’ variables were amended. 
+
+The ‘Budget’ variable had missing values due to the official budgets not being released for many of the films in the data set. It is common for studios withhold releasing budget information for their films, and the ‘Budget’ variable was dropped from the data, as simple mean imputation would lead to inaccurate conclusions, due to the high variance in production budgets across films. 
+
+A number of films from 2023 were included in the scraped data, as the source data primarily captures 2024 calendar earnings for films. Films released in 2023 that remained in theaters would continue to generate revenue into 2024 under this logic. Since the goal of the analysis is to track movie trends in 2024 for movies released in 2024, the observations from 2023 were dropped from the data set. Films re-released in 2024 were retained in the data set, as they provide insight into audience movie-going behavior in 2024. The final sample size is 180 films. 
+
+
+## Univariate Distribution Analysis
+
+### Distributions of Key Numeric Variables
+
+In order to detect skewness, multimodality, or extreme outliers in the numerical variables, univariate distribution analysis was performed using histogram construction. Histograms are combined with density estimates to show both the frequency and probability density. 
+
+```{r}
+library(tidyverse)
+library(scales)
+library(stringr)
+library(plotly)
+library(lubridate)
+library(forcats)
+
+# Cleaning pipeline
+movie_data <- read_csv("https://raw.githubusercontent.com/ramyapinninti/553-Assignment-3/main/bom_2024_cleaned%204.csv", col_types = cols(Rank = col_double(), .default = col_guess()))
+
+# Unified Cleaning Pipeline
+final_eda_data <- movie_data %>%
+  filter(!is.na(Release.Date), str_trim(Release.Date) != "") %>%
+  mutate(
+    Theaters = as.numeric(str_remove_all(as.character(Theaters), ",")),
+    Runtime  = as.numeric(str_remove_all(as.character(Runtime), " min")),
+    
+    Gross_Numeric = as.numeric(str_remove_all(as.character(Gross), "[\\$,]")),
+    Total_Gross_Numeric = as.numeric(str_remove_all(as.character(Total.Gross), "[\\$,]")),
+    Gross_Clean = if_else(!is.na(Total_Gross_Numeric) & Total_Gross_Numeric > Gross_Numeric, Total_Gross_Numeric, Gross_Numeric),
+    Log_Gross = log10(Gross_Clean),
+    
+    Clean_String  = str_remove_all(as.character(Genres), "Widest Release|Widest"),
+    Primary_Genre = str_extract(str_trim(Clean_String), "^[A-Z][a-zA-Z-]+"),
+    Primary_Genre = if_else(Primary_Genre == "Sci", "Sci-Fi", Primary_Genre),
+    
+    Distributor_Clean = str_trim(as.character(Distributor)),
+    Distributor_Type = if_else(Distributor_Clean %in% c("Universal Pictures", "Warner Bros.", 
+                                                        "Walt Disney Studios Motion Pictures", 
+                                                        "20th Century Studios",
+                                                        "Sony Pictures Releasing", "Paramount Pictures", "Lionsgate"), 
+                               "Major Studio", "Smaller/Independent"),
+    
+    Month_Abbrev = str_extract(str_trim(Release.Date), "^[A-Za-z]{3}"),
+    Release_Month = factor(Month_Abbrev, levels = month.abb, labels = month.name),
+    Parsed_Date   = parse_date_time(paste0(str_trim(Release.Date), ", 2024"), orders = c("mdy", "ymd", "dmy")),
+    
+    # MPAA missing values
+    MPAA = fct_explicit_na(factor(MPAA), na_level = "NR")
+  ) %>%
+  filter(!is.na(Primary_Genre), !is.na(Parsed_Date)) %>%
+  
+  # 2023 Leaks
+  filter(!(Release %in% c("Oppenheimer", "The Holdovers", "All of Us Strangers", "Wonka", "Aquaman and the Lost Kingdom", 
+                         "Migration", "Anyone But You", "Trolls Band Together", "Godzilla Minus One", "The Boy and the Heron", 
+                         "The Color Purple", "The Boys in the Boat", "Ferrari", "The Zone of Interest", "American Fiction", 
+                         "The Iron Claw", "Wish", "Out of Darkness"))) %>%
+  
+  mutate(
+    Rank = row_number(),
+    Release_Season = case_when(
+      month(Parsed_Date) %in% c(12, 1, 2) ~ "Winter",
+      month(Parsed_Date) %in% c(3, 4, 5)  ~ "Spring",
+      month(Parsed_Date) %in% c(6, 7, 8)  ~ "Summer",
+      month(Parsed_Date) %in% c(9, 10, 11) ~ "Fall"
+    )
+  ) %>%
+  
+  # choosing necessary columns
+ select(Rank, Gross = Gross_Clean, Log_Gross, Runtime, MPAA, Release_Month, Release_Season, Primary_Genre, Distributor_Type, Distributor_Clean)
+
+# palette 
+mpaa_palette <- c("G" = "#3B82F6", "PG" = "#0D9488", "PG-13" = "#EAB308", "R" = "#E11D48", "NR" = "#94A3B8")
+
+
+
+brand_indigo <- "#0F172A"; popcorn_gold <- "#EAB308"; vibrant_teal <- "#0D9488"
+accent_rose  <- "#E11D48"; accent_blue  <- "#3B82F6"
+
+mpaa_palette <- c("G" = accent_blue, "PG" = vibrant_teal, "PG-13" = popcorn_gold, "R" = accent_rose)
+dist_palette <- c("Major Studio" = brand_indigo, "Smaller/Independent" = vibrant_teal)
+
+# Summary stats
+
+summary_stats <- final_eda_data %>%
+  group_by(Distributor_Type) %>%
+  summarise(
+    Total_Films = n(),
+    Median_Revenue = median(Gross, na.rm = TRUE),
+    Mean_Revenue = mean(Gross, na.rm = TRUE),
+    Volatility_SD = sd(Gross, na.rm = TRUE)
+  )
+
+# expanded palette
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+sleek_palette <- c("#334155", "#0F172A", "#0D9488", "#E11D48", "#EAB308", "#64748B", 
+                   "#7C3AED", "#DB2777", "#0284C7", "#94A3B8", "#475569", "#1E293B")
+mpaa_palette <- c("G" = "#3B82F6", "PG" = "#0D9488", "PG-13" = "#EAB308", "R" = "#E11D48")
+dist_palette <- c("Major Studio" = "#0F172A", "Smaller/Independent" = "#0D9488")
+
+
+
+# Define sizing and margins
+new_h <- 500
+new_w <- 750
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+rt_dens <- density(final_eda_data$Runtime, na.rm = TRUE)
+
+p1 <- plot_ly(data = final_eda_data, height = new_h, width = new_w) %>%
+  add_histogram(x = ~Runtime, marker = list(color = "#0F172A"), name = "Histogram") %>%
+  add_lines(x = rt_dens$x, 
+            y = rt_dens$y * (nrow(final_eda_data) * 10), 
+            yaxis = "y2", 
+            name = "Density", 
+            line = list(color = "#EAB308", width = 3),
+            fill = "tozeroy",              # This creates the fill
+            fillcolor = "rgba(234, 179, 8, 0.2)") %>% # Light gold with 20% opacity
+  layout(title = "<b>RUNTIME DISTRIBUTION</b>", 
+         xaxis = list(title = "Runtime (Minutes)"), 
+         yaxis2 = list(overlaying = "y", side = "right", title = "Density Scale"), 
+         margin = m)
+
+
+gr_dens <- density(final_eda_data$Log_Gross, na.rm = TRUE)
+
+# density x-values back to dollars (log base 10)
+dens_dollars <- 10^(gr_dens$x)
+
+# histogram bin midpoints for hover 
+hist_data <- hist(final_eda_data$Log_Gross, plot = FALSE)
+bin_midpoints <- hist_data$mids
+bin_counts <- hist_data$counts
+bin_revenue <- 10^(bin_midpoints)
+
+p2 <- plot_ly(height = new_h, width = new_w) %>%
+  
+  # Histogram with hover for midpoint revenue
+  add_bars(
+    x = bin_midpoints,
+    y = bin_counts,
+    marker = list(color = "#0F172A"),
+    name = "Gross Revenue Histogram",
+    hovertemplate = paste(
+      "<b>Log Revenue:</b> %{x}<br>",
+      "<b>Revenue (midpoint):</b> $%{customdata:,.0f}<br>",
+      "<b>Count:</b> %{y}<extra></extra>"
+    ),
+    customdata = bin_revenue
+  ) %>%
+  
+  # Density curve with hover showing actual revenue
+  add_lines(
+    x = gr_dens$x,
+    y = gr_dens$y * (nrow(final_eda_data) * 0.5),
+    yaxis = "y2",
+    name = "Density",
+    line = list(color = "#0D9488", width = 3),
+    fill = "tozeroy",                      # This creates the fill
+    fillcolor = "rgba(13, 148, 136, 0.2)",
+    hovertemplate = paste(
+      "<b>Log Revenue:</b> %{x}<br>",
+      "<b>Revenue:</b> $%{customdata:,.0f}<br>",
+      "<b>Density:</b> ", sprintf("%.4f", gr_dens$y), "<extra></extra>"
+    ),
+    customdata = dens_dollars
+  ) %>%
+  
+  layout(
+    title = "<b>DOMESTIC GROSS REVENUE (LOG)</b>",
+    xaxis = list(
+      title = "Log Revenue",
+      tickvals = c(4, 6, 8),
+      ticktext = c("$10K", "$1M", "$100M")
+    ),
+    yaxis = list(title = "Count"),
+    yaxis2 = list(
+      overlaying = "y",
+      side = "right",
+      title = "Density Scale"
+    ),
+   # Move legend 
+  legend = list(
+    orientation = "v", # Vertical legend 
+    x = 1.15,          # right axis orientation
+    y = 0.5,           # Center
+    xanchor = "left"
+  ),
+  # right margin adjustment
+  margin = list(r = 150, t = 80, l = 50) 
+)
+
+
+p1; p2
+```
+
+
+
+An examination of the univariate distributions reveals several important patterns. The distribution of gross revenue is extremely skewed right, with a trailing tail of values extending towards a billion dollars. 
+
+This indicates that most movies released in 2024 earned a modest gross revenue, looking at the proportion of films that generated less than $100M. However, certain 'blockbuster' films are outliers that skew the distribution. The last bin of the histogram only includes 5 films. Out of the 180 films in the data set, these points represent the top 2.8%. Matching titles to gross revenue, these films are 'Inside Out 2,' 'Deadpool & Wolverine,' 'Wicked,' 'Moana 2', and 'Despicable Me 4.' 
+
+Additionally, the distribution of movie runtime is also skewed right, with most movies running for about 103 minutes. There are certain movies that are extreme outliers, hitting 200 or more minutes of runtime. These correspond to the titles 'Pushpa: The Rule - Part 2' and 'The Lord of the Rings: The Return of the King 2024 Re-release.' These runtimes are accurate, with the former film having one of the longest run times of modern Indian movies and the latter being typical of the 'Lord of the Rings' franchise. 
+
+The observed distributional characteristics carry direct implications for model development. The relationship between the runtime variable and the log-odds of the outcome will be examined. The gross revenue will be used to define commercial success of a film.
+
+
+### Distributions of Categorical Variables
+
+Categorical variables define the groups within the data that are essential to entertainment-related business questions. The frequency breakdowns below provide insight into film genre trends and differences between distributors, highlighting important patterns in the movie industry. 
+
+
+```{r}
+
+new_h <- 500
+new_w <- 750
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+# P10: Film Volume by Studio Tier 
+p10 <- final_eda_data %>%
+  count(Distributor_Type) %>%
+  plot_ly(x = ~Distributor_Type, y = ~n, type = 'bar', 
+          color = ~Distributor_Type, colors = dist_palette, 
+          height = new_h, width = new_w) %>%
+  layout(title = "<b>FILM VOLUME BY STUDIO TIER</b>", 
+         xaxis = list(title = "Studio Classification"), 
+         yaxis = list(title = "Number of Films"), 
+         margin = m, showlegend = FALSE)
+
+# P11: Volume by Top 15 Distributors 
+p11 <- final_eda_data %>%
+  count(Distributor_Clean) %>%
+  slice_max(n, n = 15) %>%
+  plot_ly(x = ~reorder(Distributor_Clean, -n), y = ~n, type = 'bar', 
+          marker = list(color = "#0F172A"), 
+          height = new_h, width = new_w) %>%
+  layout(title = "<b>VOLUME BY TOP 15 DISTRIBUTORS</b>", 
+         xaxis = list(title = "Distributor Name", tickangle = 45), 
+         yaxis = list(title = "Number of Films"), 
+         margin = m)
+
+
+
+p10; p11
+```
+
+
+Observation of the categorical variable frequencies reveals significant trends in the data set. The 'Film Volume by Studio Tier' shows that the majority of films in 2024 were produced by smaller/independent studios, and only 69 films were produced by major studios. The 'Volume by top 15 Distributors' provides a granular view, revealing the top 5 distributors by volume to be 'Fathom Events,' 'Sony Pictures Releasing,' 'Lionsgate,' 'A24,' and 'Universal Pictures.' 
+
+The traditional 'Big 6' American film studios are Walt Disney Studios, Warner Brothers Entertainment, Universal Studios, Sony Pictures, Paramount Pictures, and 20th Century Fox (now owned by Disney), and two of these major studios are within the top 5 distributors by volume. This shows that major studios generally still produce a large number of films, but there are far more 'smaller label' studios producing entertainment. 
+
+```{r}
+
+new_h <- 500
+new_w <- 750
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+
+p9 <- final_eda_data %>%
+  count(Primary_Genre) %>%
+  plot_ly(x = ~reorder(Primary_Genre, -n), y = ~n, type = 'bar', 
+          color = ~Primary_Genre, colors = sleek_palette,
+          height = new_h, width = new_w) %>%
+  layout(title = "<b>VOLUME BY PRIMARY GENRE</b>", 
+         xaxis = list(title = "Genre", tickangle = 45), 
+         yaxis = list(title = "Number of Films"), 
+         margin = m, showlegend = FALSE)
+
+p9;
+```
+
+Furthermore, the 'Volume by Primary Genre' illustrates that films with 'Action,' 'Drama,' and 'Comedy' as their primary genre represent the majority of films, followed by the 'Horror'/'Biography,'/'Adventure' grouping. 'Animation' films  in seventh place, but it should be noted that Animation films have a longer production period and are typically produced by large distributors such as Disney or Warner Bros. As this data set only represents a slice of box office data, scraped from 2024 earnings, this metric alone does not represent the popularity of genres, but provides some insight into what the distribution of films may look like in a given year, due to the production life cycle. The relationship between the distributors, gross revenue, and the genre and MPAA ratings of produced films will be further examined. 
+
+For modeling purposes, rare genre types with fewer than 20 observations will be programmatically collapsed into an 'Other' group to stabilize estimates obtained through logistic regression modeling.
+
+## Relationships Between Variables
+
+### Correlation and Trend Discovery
+
+The interplay between numeric variables is the engine of many predictive models. A scatterplot matrix augmented with correlation coefficients and LOESS trend lines allows us to quickly gauge the strength and direction of linear associations, detect potential multicollinearity, and uncover non-linear patterns that simple correlations might obscure.
+
+```{r}
+
+
+span_val <- 0.45  
+loess_mod <- loess(Log_Gross ~ Runtime, data = final_eda_data, span = span_val)
+
+
+trend_line <- data.frame(
+  Runtime = seq(min(final_eda_data$Runtime, na.rm = TRUE),
+                max(final_eda_data$Runtime, na.rm = TRUE),
+                length.out = 200)
+)
+trend_line$Log_Gross <- predict(loess_mod, newdata = trend_line)
+
+
+p3 <- plot_ly(final_eda_data, height = 500, width = 750) %>%
+  add_markers(
+    x = ~Runtime,
+    y = ~Log_Gross,
+    color = ~MPAA,
+    colors = c("G" = "#3B82F6", "PG" = "#0D9488", "PG-13" = "#EAB308",
+               "R" = "#E11D48", "NR" = "#94A3B8"),
+    marker = list(size = 8, opacity = 0.8)
+  ) %>%
+  add_lines(
+    data = trend_line,
+    x = ~Runtime,
+    y = ~Log_Gross,
+    line = list(color = "#334155", dash = "dot", width = 3),
+    name = paste0("Trend (LOESS, span=", span_val, ")")
+  ) %>%
+  layout(
+    title = "<b>REVENUE VS. RUNTIME</b>",
+    xaxis = list(title = "Runtime (Minutes)"),
+    yaxis = list(title = "Log Revenue"),
+    margin = m
+  )
+
+
+spans <- c(0.3, 0.5, 0.7)
+for (s in spans) {
+  mod <- loess(Log_Gross ~ Runtime, data = final_eda_data, span = s)
+  trend_line$Log_Gross <- predict(mod, newdata = trend_line)
+  p3 <- p3 %>%
+    add_lines(
+      data = trend_line,
+      x = ~Runtime,
+      y = ~Log_Gross,
+      line = list(color = adjustcolor("#64748B", alpha.f = 0.5), width = 2),
+      name = paste0("Span ", s)
+    )
+}
+
+corr_val <- cor(final_eda_data$Runtime, final_eda_data$Log_Gross, use = "complete.obs")
+corr_text <- paste0(" (r = ", round(corr_val, 3), ")")
+
+p3 <- p3 %>%
+  layout(
+    title = paste0("<b>REVENUE VS. RUNTIME</b>", corr_text)
+  )
+
+p3
+
+```
+
+
+
+As there are limited continuous numeric variables in this data set, the relationship shown in the scatterplot is the run time by log revenue. The relationship is not linear, with run time increasing the gross revenue of a film. The LOESS curve shows an expected increase from the few below-average data points for run time, increasing up towards the majority of points, which have an average run time around 127 minutes for a standard feature-length film. Extremely short or extremely long films in this data set exhibit weak gross revenue, but due to the limited nature of this data set, there is no strong pattern that allows for a conclusion. The data point represented in the extreme far right is 'Lord of the Rings: Return of the King,' which was a re-release that was intended to generate promotional buzz for the franchise and another LOTR film. 
+
+In short, the correlation coefficient correctly indicates that there is no linear relationship, but the LOESS curve shows that the association is nonlinear and localized, with revenue peaking around the most common runtimes and tapering off at the extremes.
+
+
+```{r}
+new_h <- 500
+new_w <- 750
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+
+# P7: 2024 Market Rhythm
+ts_avg <- final_eda_data %>% group_by(Release_Month) %>% summarise(Avg_Gross = mean(Gross, na.rm = TRUE))
+p7 <- plot_ly(ts_avg, x = ~Release_Month, y = ~Avg_Gross, type = 'scatter', mode = 'lines+markers', line = list(color = "#0F172A", width = 3), marker = list(color = "#EAB308", size = 10),  height = new_h, width = new_w) %>%
+  layout(title = "<b>2024 MARKET RHYTHM</b>", xaxis = list(title = "Month", tickangle = 45), yaxis = list(title = "Avg Gross ($)", tickformat = "$,.0f"), margin = m)
+
+# P8: Monthly Revenue Variance
+p8 <- plot_ly(final_eda_data, x = ~Release_Month, y = ~Log_Gross, color = ~Release_Month, colors = sleek_palette, type = "box",  height = new_h, width = new_w) %>%
+  layout(title = "<b>MONTHLY REVENUE VARIANCE</b>", xaxis = list(title = "Release Month", tickangle = 45), yaxis = list(title = "Log Revenue"), margin = m, showlegend = FALSE)
+
+p7; p8
+```
+
+Observing the revenue variance by release month, the spread of revenues is noticeably higher in June and July, months that are generally known to result in 'summer blockbusters.' However, the variability in revenue is also high for the month of July, indicating that some films achieve exceptional success and others underperform. This suggests that release month alone is not a sufficient predictor of success - it interacts with factors such as genre and distributor. 
+
+The '2024 Market Rhythm' plot reinforces this trend and shows that the average gross revenue for July is 127.2 million dollars, followed by a rise in November, which has an average revenue of 78.2 million dollars. 
+
+For modeling, these findings suggest that release month should be treated as a categorical predictor, showcasing seasonal trends. An interaction term may be used to analyze whether the trends seen in the release month variable differ by genre.
+
+### Comparing Distributions Across Groups 
+
+The visualizations below provide insight into questions about group differences, for instance the distribution of genre by distributor type.
+
+
+```{r} 
+
+new_h <- 500
+new_w <- 750
+m <- list(l = 60, r = 50, b = 100, t = 80, pad = 4) 
+
+final_eda_data <- final_eda_data %>%
+  mutate(Hover_Label_P5 = paste0("Studio: ", Distributor_Type, "<br>",
+                                 "Raw Revenue: $", format(round(Gross, 0), big.mark = ",")))
+# P5: Revenue by Studio Tier (Clean Version)
+p5 <- plot_ly(final_eda_data, 
+              x = ~Distributor_Type, 
+              y = ~Log_Gross, 
+              color = ~Distributor_Type, 
+              colors = dist_palette, 
+              type = "box",
+              # Silence the default box hoverinfo
+              hoverinfo = "none",
+              height = new_h, width = new_w) %>%
+  # Add the invisible marker layer for the custom hover text
+  add_markers(x = ~Distributor_Type, 
+              y = ~Log_Gross, 
+              text = ~Hover_Label_P5, 
+              hoverinfo = "text",
+              marker = list(opacity = 0)) %>%
+  layout(title = "<b>REVENUE BY STUDIO TIER</b>", 
+         xaxis = list(title = "Studio Classification"), 
+         yaxis = list(title = "Log Revenue"), 
+         margin = m, showlegend = TRUE)
+
+
+# Define formatted labels for the hover
+final_eda_data <- final_eda_data %>%
+  mutate(Hover_Label = paste0("Genre: ", Primary_Genre, "<br>",
+                              "Raw Revenue: $", format(round(Gross, 0), big.mark = ",")))
+
+# P6: Revenue by Primary Genre
+p6 <- plot_ly(final_eda_data, 
+              x = ~Primary_Genre, 
+              y = ~Log_Gross, 
+              color = ~Primary_Genre, 
+              colors = sleek_palette, 
+              type = "box",
+              # Hide standard hover info
+              hoverinfo = "none") %>%
+  # ADD A "MARKER" LAYER JUST FOR HOVERING
+  # This creates invisible points that hold your hover information
+  add_markers(x = ~Primary_Genre, 
+              y = ~Log_Gross, 
+              text = ~Hover_Label, 
+              hoverinfo = "text",
+              marker = list(opacity = 0)) %>%
+  layout(title = "<b>REVENUE BY PRIMARY GENRE</b>", 
+         xaxis = list(title = "Genre", tickangle = 45), 
+         yaxis = list(title = "Log Revenue"), 
+         margin = m, showlegend = FALSE)
+
+p5; p6
+```
+
+
+In section 3.2.2, the analysis of film volume by distributor type revealed that two of the 'Big 6' film companies ranked among the top five distributors. Box plots of studio type by revenue reveal that the median revenue for major studios is about seven times higher than the revenue for smaller studios. The IQR is also wider for major studios, suggesting greater variability in outcomes.
+
+The most successful film from a major studio grossed over half a billion dollars in 2024, while the most successful film distributed by a smaller studio stayed just under one hundred million, illustrating the scale gap in the production and reach of films.
+
+The 'Revenue by Primary Genre' breakdown indicates that there is high variability in the 'Action' and 'Adventure' genres, with one of the highest grossing films of 2024 belonging to the 'Action' category, along with significantly lower grossing films in the same genre. Genres such as 'Documentary,' 'Music,' and 'Musical,' cluster at lower revenue levels, implying that genre interacts with studio tier. 
+
+For modeling, studio tier (Distributor_Type) is to be included as a categorical predictor, with Major Studio as the reference category. 
+
+### Contingency and Association
+
+This analysis aims to break down the success of films released in 2024, based on a combination of factors. The success of films based on distributor type and seasonality is observed.
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+final_eda_data <- final_eda_data %>%
+  mutate(Is_Success = if_else(Gross >= 150000000, 1, 0))
+
+
+# Calculate proportions
+bar_data <- final_eda_data %>%
+  group_by(Distributor_Type, Is_Success) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Distributor_Type) %>%
+  mutate(percentage = count / sum(count) * 100) %>%
+  mutate(Success_Label = if_else(Is_Success == 1, "Yes", "No"))
+
+p_dist <- plot_ly(bar_data, x = ~Distributor_Type, y = ~percentage, color = ~Success_Label, 
+                  type = "bar", text = ~paste0(round(percentage, 1), "%"), textposition = 'outside') %>%
+  layout(
+    title = "<b>SUCCESS RATE BY DISTRIBUTOR TYPE</b>",
+    xaxis = list(title = "Distributor"),
+    yaxis = list(title = "Percentage (%)"),
+    barmode = "group",
+    autosize = FALSE,
+    width = 700, # Set a fixed width
+    height = 500, # Set a fixed height
+    margin = list(l = 50, r = 50, b = 100, t = 80) # Increased 'b' for labels
+  )
+p_dist
+```
+
+The success rate by distributor type shows that 78.3% of films produced by major studios are successful, whereas no films produced by smaller studios are successful, after redefining success as gross revenue ≥ $150M. This results in complete separation for the distributor variable, with smaller studios exhibiting a 0% success rate compared to major studios. 
+
+Major studios significantly benefit from established global pipelines and promotional budgets that facilitate a greater market reach. This breakdown shows that distributor will be a significant predictor in blockbuster-level success of a film.
+
+
+
+```{r}
+
+library(tidyverse)
+library(tidygeocoder)
+library(plotly)
+
+
+# ---------------------------------------------------------
+# 1. Read CSV directly from GitHub (replace with your URL)
+# ---------------------------------------------------------
+csv_url <- "https://raw.githubusercontent.com/ramyapinninti/553-Assignment-3/main/studios.csv"
+
+studios <- readr::read_csv(csv_url)
+
+
+
+# ---------------------------------------------------------
+# 2. Geocode headquarters
+# ---------------------------------------------------------
+studios_geo <- studios %>%
+  geocode(Headquarters, method = "osm", lat = latitude, long = longitude)
+
+# ---------------------------------------------------------
+# 3. Assign regions for faceting or coloring
+# ---------------------------------------------------------
+studios_geo <- studios_geo %>%
+  mutate(
+    Region = case_when(
+      str_detect(Headquarters, "USA|California|New York|Texas|Colorado|Utah") ~ "United States",
+      str_detect(Headquarters, "United Kingdom|London") ~ "United Kingdom",
+      str_detect(Headquarters, "Italy|Padova") ~ "Europe",
+      str_detect(Headquarters, "Philippines") ~ "Asia",
+      str_detect(Headquarters, "Dubai|UAE") ~ "Middle East",
+      str_detect(Headquarters, "India|Mumbai") ~ "Asia",
+      TRUE ~ "Other"
+    )
+  )
+
+
+fig <- studios_geo %>%
+  plot_ly(
+    type = "scattergeo",
+    mode = "markers",
+    lat = ~latitude,
+    lon = ~longitude,
+    marker = list(
+      size = 8,
+      color = "black",
+      opacity = 0.8,
+      line = list(width = 1, color = "white")
+    ),
+    text = ~paste0("<b>", Studio, "</b><br>", Headquarters),
+    hoverinfo = "text"
+  ) %>%
+  layout(
+    geo = list(
+      projection = list(type = "natural earth"),
+      showland = TRUE,
+      landcolor = "rgb(240,240,240)",
+      showcountries = TRUE,
+      countrycolor = "rgb(200,200,200)",
+      showocean = TRUE,
+      oceancolor = "rgb(230,240,255)"
+    ),
+    title = "<b>Studio Headquarters (2024 Releases)</b>",
+    # Add sizing parameters to control map area
+    autosize = FALSE,
+    width = 700, 
+    height = 400,
+    # Adjust margins to ensure title and map are contained
+    margin = list(l = 20, r = 20, t = 60, b = 20)
+  )
+
+fig
+
+```
+Figure: a visualization of the HQ locations of studios that released 2024 US films. Recent trends show film distributors with international locations, as the US increasingly becomes a key box office location for new international film categories
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+final_eda_data <- final_eda_data %>%
+  mutate(Is_Success = if_else(Gross >= 150000000, 1, 0))
+
+
+
+# Calculate proportions
+bar_data <- final_eda_data %>%
+  group_by(Distributor_Type, Is_Success) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(Distributor_Type) %>%
+  mutate(percentage = count / sum(count) * 100) %>%
+  mutate(Success_Label = if_else(Is_Success == 1, "Yes", "No"))
+
+season_data <- final_eda_data %>%
+  group_by(Release_Season, Is_Success) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Release_Season) %>%
+  mutate(prop = n / sum(n)) %>%
+  mutate(Success_Label = if_else(Is_Success == 1, "Yes", "No"))
+
+# 2. Immediately plot it
+p_season <- plot_ly(season_data, x = ~Release_Season, y = ~prop, color = ~Success_Label, 
+                    type = "bar") %>%
+  layout(
+    title = "<b>SUCCESS RATE BY SEASON</b>",
+    xaxis = list(title = "Season"),
+    yaxis = list(title = "Proportion of Films", tickformat = ",.0%"),
+    barmode = "stack",
+    autosize = FALSE,
+    width = 700, 
+    height = 500,
+    margin = list(l = 50, r = 50, b = 80, t = 80)
+  )
+
+p_season
+```
+
+In contrast, 'Success Rate by Season' shows relatively uniform proportions of successful and unsuccessful films across fall, spring, summer, and winter. This suggests release timing alone does not affect the probability of commercial success once other factors—such as genre, studio tier, and budget—are accounted for. 
+
+```{r}
+# 1. Redefine success as top 25% of revenue
+ffinal_eda_data <- final_eda_data %>%
+  mutate(Is_Success = if_else(Gross >= 150000000, 1, 0))
+
+# 2. Collapse genre categories into stable groups
+final_eda_data <- final_eda_data %>%
+  mutate(
+    Genre_Group = case_when(
+      Primary_Genre %in% c("Action", "Adventure", "Fantasy", "Sci-Fi") ~ "Action/Adventure",
+      Primary_Genre %in% c("Drama", "Biography", "History") ~ "Drama",
+      Primary_Genre %in% c("Comedy", "Family", "Musical", "Music") ~ "Comedy",
+      Primary_Genre %in% c("Horror", "Crime", "Mystery") ~ "Thriller/Horror",
+      TRUE ~ "Other"
+    )
+  )
+
+# 3. Fit the corrected logistic regression model
+library(logistf)
+
+model_firth <- logistf(
+  Is_Success ~ Runtime + Distributor_Type +
+               Genre_Group +
+               Release_Season,
+  data = final_eda_data
+)
+
+summary(model_firth)
+
+# 4. View results
+summary(model_firth)
+
+
+```
+
+# Logistic Regression Analysis 
+
+## Model Overview  
+
+### Model Specification
+
+Blockbuster success was defined as gross revenue of at least $150 million, based on the empirical distribution of the dataset, where the top twenty films all exceeded the threshold. Under this definition, several genre categories (Drama, Thriller/Horror, Other) and  smaller/independent distributors had zero blockbuster films, producing complete separation. Standard logistic regression failed to produce reliable estimates. 
+
+To address this, a Firth penalized logistic regression model was fitted, providing bias‑reduced and stable estimates. The final model included runtime, distributor type, genre group, and release season as predictors. Interaction terms were removed as they were not estimable given the data structure.
+
+
+### Model Results
+
+The **Firth logistic regression** results indicate that genre is the strongest predictor of blockbuster success. Using Action/Adventure as the reference category, Drama films had significantly lower odds of blockbuster success, with a coefficient of –3.19 (SE = 1.44, p = 0.0037). This reflects the empirical fact that none of the 43 Drama films in the dataset reached the $150 million threshold. Thriller/Horror films also showed significantly reduced odds, with a coefficient of –2.38 (SE = 1.44, p = 0.0396), again consistent with the absence of any blockbuster films in this category. The “Other” genre category had a negative coefficient of –1.94 (SE = 1.60, p = 0.209), indicating lower odds but without statistical significance. Comedy films did not differ significantly from Action/Adventure, with a coefficient of 0.96 (SE = 1.17, p = 0.472), reflecting the small number of blockbuster comedies (1 out of 24).
+
+Distributor type was also a significant predictor. Smaller/Independent distributors had dramatically lower odds of producing a blockbuster, with a coefficient of –4.74 (SE = 1.45, p < 0.00001). This aligns with the empirical distribution: all 15 blockbuster films were released by major studios, while smaller distributors produced none. Runtime did not meaningfully predict blockbuster success, with a coefficient of 0.019 (SE = 0.012, p = 0.214), indicating no evidence that longer films are more likely to reach $150 million once genre and distributor type are accounted for. Release season also showed no statistically significant effects. Spring (coef = –0.90, p = 0.301), Summer (coef = 0.55, p = 0.537), and Winter (coef = –1.24, p = 0.198) did not differ meaningfully from Fall, the reference category.
+
+### Interpretation
+
+The model demonstrates that blockbuster performance in this dataset is overwhelmingly concentrated among Action/Adventure films released by major studios. The large negative coefficients for Drama (–3.19) and Thriller/Horror (–2.38) show that these genres produced no films exceeding $150 million. The strong negative coefficient for smaller distributors (–4.74) reflects the absence of blockbuster films from these companies. Runtime and release season do not appear to significantly influence blockbuster outcomes once genre and distributor type are included, suggesting that these observed factors dominate the revenue distribution.
+
+
+### Recommendations
+
+The results suggest that studios seeking blockbuster‑level performance should prioritize Action/Adventure films, which are the only genre consistently associated with revenues above $150 million. Major studio backing is effectively a prerequisite for blockbuster success, as smaller distributors in this dataset produced no films that reached the threshold. Decisions about runtime should not be based on expectations of increased revenue, as runtime showed no meaningful association with blockbuster outcomes. Similarly, release season should be treated as a secondary consideration; while summer releases are traditionally associated with high‑grossing films, the model indicates that genre and distributor resources dominate seasonal effects.
+
+```{r}
+
+# Odds Ratio Table for Firth Logistic Regression
+library(dplyr)
+
+odds_table <- data.frame(
+  Predictor = c(
+    "Runtime (minutes)",
+    "Distributor: Smaller/Independent vs Major",
+    "Genre: Comedy vs Action/Adventure",
+    "Genre: Drama vs Action/Adventure",
+    "Genre: Other vs Action/Adventure",
+    "Genre: Thriller/Horror vs Action/Adventure",
+    "Season: Spring vs Fall",
+    "Season: Summer vs Fall",
+    "Season: Winter vs Fall"
+  ),
+  Coefficient = c(
+    0.01938564,
+    -4.73652063,
+    0.95579362,
+    -3.19063783,
+    -1.94011968,
+    -2.37658807,
+    -0.90069231,
+    0.54831412,
+    -1.23912476
+  ),
+  Odds_Ratio = exp(c(
+    0.01938564,
+    -4.73652063,
+    0.95579362,
+    -3.19063783,
+    -1.94011968,
+    -2.37658807,
+    -0.90069231,
+    0.54831412,
+    -1.23912476
+  )),
+    p_value = c(
+    0.2135,
+    0.00000867,
+    0.4721,
+    0.00375,
+    0.2089,
+    0.0396,
+    0.3006,
+    0.5370,
+    0.1975
+  )
+)
+odds_table
+
+
+```
+### Conclusion
+
+The odds‑ratio analysis provides quantitative support for the conclusion that genre and distributor type are decisive factors in blockbuster success. Major‑studio Action/Adventure films dominate the highest revenue tier, while other genres and smaller distributors face structural limitations that prevent them from achieving comparable outcomes. These findings highlight the concentration of blockbuster success within a narrow segment of the film industry and underscore the importance of production scale and genre selection in achieving high commercial performance.
+
+
+**Sources**
+
+https://medium.com/@devaraz/the-making-of-a-blockbuster-a-look-at-the-budget-and-production-of-a-major-motion-picture-9b2cdb2f02c8
+
+https://goldhouse.substack.com/p/tubis-ceo-anjali-sud-is-leading-the
